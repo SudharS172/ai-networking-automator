@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                String      @id @default(cuid())
+  name              String?
+  email             String?     @unique
+  emailVerified     DateTime?
+  image             String?
+  phoneNumber       String?
+  accounts          Account[]
+  sessions          Session[]
+  
+  // Profile information
+  professionalField String?
+  currentRole       String?
+  skills            String[]    @default([])
+  careerGoals       String?
+  interests         String[]    @default([])
+  hobbies           String[]    @default([])
+  
+  // Networking preferences
+  networkingPreferences NetworkingPreferences?
+  
+  // Relationships
+  callRecords        CallRecord[]
+  matchesAsUser1     Match[]    @relation("UserOneMatches")
+  matchesAsUser2     Match[]    @relation("UserTwoMatches")
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model NetworkingPreferences {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id])
+  connectionType    String   // e.g., "mentorship", "collaboration", "social"
+  industryPreference String?
+  interactionStyle  String   // e.g., "virtual", "in-person", "hybrid"
+  updatedAt         DateTime @updatedAt
+}
+
+model CallRecord {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  blandCallId       String   @unique
+  status            String   // "scheduled", "completed", "failed"
+  transcript        String?  @db.Text
+  analysis          Json?    // Stores the Gemini analysis
+  recordingUrl      String?
+  createdAt         DateTime @default(now())
+  completedAt       DateTime?
+}
+
+model Match {
+  id                String   @id @default(cuid())
+  user1Id           String
+  user2Id           String
+  user1             User     @relation("UserOneMatches", fields: [user1Id], references: [id])
+  user2             User     @relation("UserTwoMatches", fields: [user2Id], references: [id])
+  matchScore        Float    // 0 to 1
+  sharedInterests   String[]
+  status            String   // "pending", "connected", "rejected"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model BatchCall {
+  id        String   @id @default(cuid())
+  task      String
+  maxBudget Float?
+  status    String   @default("pending")
+  email     String
+  createdAt DateTime @default(now())
+  calls     Call[]
+}
+
+model Call {
+  id          String     @id @default(cuid())
+  blandCallId String?    @unique  // Add @unique here
+  batchId     String
+  batch       BatchCall  @relation(fields: [batchId], references: [id])
+  phoneNumber String
+  status      String
+  transcript  String?    @db.Text
+  analysis    Json?
+  error       String?
+  createdAt   DateTime   @default(now())
+  completedAt DateTime?
+}
+
+// New models for smart search feature
+model SmartSearchCall {
+  id            String    @id @default(cuid())
+  blandCallId   String?   @unique
+  phoneNumber   String
+  businessName  String
+  email         String    // User's email
+  status        String    // initiated, completed, failed
+  query         String    // Original search query
+  instructions  String?   // Custom instructions
+  transcript    String?   @db.Text
+  analysis      Json?
+  recording_url String?
+  attempts      Int       @default(1)
+  error         String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  duration      Float?    // Call duration in minutes
+  price         Float?    // If price was discussed
+  availability  String?   // If availability was discussed
+  metadata      Json?     // Any additional data
+}
+
+model SmartSearchResearch {
+  id        String   @id @default(cuid())
+  query     String
+  email     String
+  results   Json     // Stored Perplexity results
+  createdAt DateTime @default(now())
+}
