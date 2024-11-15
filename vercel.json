@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm install && npx playwright install --with-deps chromium && npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+} 
