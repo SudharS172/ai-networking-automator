@@ -19,25 +19,26 @@ export class BrowserAutomationService {
     return BrowserAutomationService.instance;
   }
 
-  async initialize() {
-    if (!this.browser) {
-      console.log('Initializing browser...');
+  async init() {
+    try {
       this.browser = await chromium.launch({
-        headless: false,
-        args: [
-          '--window-size=1280,720',
-          '--window-position=50,50'
-        ]
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
-
       this.page = await this.browser.newPage();
-      await this.page.setViewportSize({ width: 1280, height: 720 });
-      
-      // Add event listeners for better debugging
-      this.page.on('console', msg => console.log('Browser console:', msg.text()));
-      this.page.on('pageerror', err => console.error('Browser error:', err));
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize browser:', error);
+      return false;
     }
-    return this.page;
+  }
+
+  async close() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+      this.page = null;
+    }
   }
 
   private async analyzeWithGemini(instruction: string, screenshot: Buffer | null = null) {
