@@ -15,7 +15,7 @@
     "chrome-aws-lambda": "^10.1.0",
     "next": "14.0.0",
     "next-auth": "^4.24.5",
-    "puppeteer-core": "^19.4.0",
+    "puppeteer-core": "^10.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
